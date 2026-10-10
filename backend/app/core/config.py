@@ -1,0 +1,28 @@
+﻿"""Application settings, loaded from environment variables (prefix SENTINEL_)."""
+
+from functools import lru_cache
+from pathlib import Path
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# backend/app/core/config.py -> repo root is three levels above this folder
+REPO_ROOT = Path(__file__).resolve().parents[3]
+
+
+class Settings(BaseSettings):
+    app_name: str = "Sentinel AI"
+    app_version: str = "0.1.0"
+    environment: str = "development"
+    cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+
+    model_config = SettingsConfigDict(
+        env_file=REPO_ROOT / ".env",
+        env_prefix="SENTINEL_",
+        extra="ignore",
+    )
+
+
+@lru_cache
+def get_settings() -> Settings:
+    """Return a cached Settings instance."""
+    return Settings()

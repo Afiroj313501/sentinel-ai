@@ -1,0 +1,18 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+
+# Secrets and local data
+.env
+*.db
+*.sqlite3
+
+# Editors / OS
+.idea/
+Thumbs.db
