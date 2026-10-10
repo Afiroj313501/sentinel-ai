@@ -15,6 +15,14 @@ class Settings(BaseSettings):
     environment: str = "development"
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
+    # Repository ingestion limits
+    max_upload_bytes: int = 25 * 1024 * 1024
+    max_archive_entries: int = 5000
+    max_extracted_files: int = 2000
+    max_file_bytes: int = 1024 * 1024
+    max_total_extracted_bytes: int = 100 * 1024 * 1024
+    max_extraction_seconds: float = 30.0
+
     model_config = SettingsConfigDict(
         env_file=REPO_ROOT / ".env",
         env_prefix="SENTINEL_",
