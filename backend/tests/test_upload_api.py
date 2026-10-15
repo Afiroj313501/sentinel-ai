@@ -18,7 +18,9 @@ def test_upload_valid_zip(make_zip) -> None:
     assert body["metadata"]["languages"] == {"Python": 1, "JSON": 1}
     assert body["metadata"]["dependency_manifests"] == ["package.json"]
     assert len(body["metadata"]["scan_id"]) == 32
-    assert {run["scanner"] for run in body["scanner_runs"]} == {"bandit", "semgrep"}
+    assert {run["scanner"] for run in body["scanner_runs"]} == {
+        "bandit", "semgrep", "pip-audit", "npm-audit"
+    }
     assert body["findings"] == []
     assert set(body["severity_counts"]) == {"critical", "high", "medium", "low", "info"}
     assert body["notice"]

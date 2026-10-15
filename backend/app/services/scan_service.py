@@ -11,6 +11,8 @@ from typing import BinaryIO
 from app.core.config import get_settings
 from app.scanners.base import Scanner, ScannerOutcome, build_outcome
 from app.scanners.bandit_scanner import BanditScanner
+from app.scanners.npm_audit_scanner import NpmAuditScanner
+from app.scanners.pip_audit_scanner import PipAuditScanner
 from app.scanners.semgrep_scanner import SemgrepScanner
 from app.schemas.finding import ScanResult
 from app.schemas.scan import RepositoryMetadata
@@ -22,7 +24,7 @@ NOTICE = "Findings come from the scanners listed in scanner_runs. An empty or sh
 
 
 def default_scanners() -> list[Scanner]:
-    return [BanditScanner(), SemgrepScanner()]
+    return [BanditScanner(), SemgrepScanner(), PipAuditScanner(), NpmAuditScanner()]
 
 
 def _run_scanner(scanner: Scanner, workspace: Path, scan_id: str, timeout: float) -> ScannerOutcome:
