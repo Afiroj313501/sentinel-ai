@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     max_file_bytes: int = 1024 * 1024
     max_total_extracted_bytes: int = 100 * 1024 * 1024
     max_extraction_seconds: float = 30.0
+    scanner_timeout_seconds: float = 60.0
 
     model_config = SettingsConfigDict(
         env_file=REPO_ROOT / ".env",

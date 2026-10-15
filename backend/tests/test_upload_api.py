@@ -14,10 +14,14 @@ def test_upload_valid_zip(make_zip) -> None:
 
     assert response.status_code == 200
     body = response.json()
-    assert body["source_files"] == 2
-    assert body["languages"] == {"Python": 1, "JSON": 1}
-    assert body["dependency_manifests"] == ["package.json"]
-    assert len(body["scan_id"]) == 32
+    assert body["metadata"]["source_files"] == 2
+    assert body["metadata"]["languages"] == {"Python": 1, "JSON": 1}
+    assert body["metadata"]["dependency_manifests"] == ["package.json"]
+    assert len(body["metadata"]["scan_id"]) == 32
+    assert {run["scanner"] for run in body["scanner_runs"]} == {"bandit", "semgrep"}
+    assert body["findings"] == []
+    assert set(body["severity_counts"]) == {"critical", "high", "medium", "low", "info"}
+    assert body["notice"]
 
 
 def test_upload_traversal_returns_400_without_echoing_entry_name(make_zip) -> None:

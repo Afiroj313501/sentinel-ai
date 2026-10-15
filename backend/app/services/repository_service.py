@@ -9,6 +9,8 @@ import time
 import zipfile
 import zlib
 from collections import Counter
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 from typing import BinaryIO
@@ -77,6 +79,13 @@ class ExtractionResult:
     files: list[PurePosixPath] = field(default_factory=list)
     skipped: int = 0
     total_bytes: int = 0
+
+
+@dataclass(frozen=True)
+class IngestedRepository:
+    scan_id: str
+    workspace: Path
+    metadata: RepositoryMetadata
 
 
 def _display_name(filename: str) -> str:
@@ -236,10 +245,11 @@ def build_metadata(scan_id: str, archive_name: str, result: ExtractionResult) ->
     )
 
 
-def ingest_zip_upload(
+@contextmanager
+def ingest_zip_workspace(
     source: BinaryIO, filename: str, limits: ArchiveLimits | None = None
-) -> RepositoryMetadata:
-    """Validate and extract an uploaded ZIP, return metadata, and clean up."""
+) -> Iterator[IngestedRepository]:
+    """Validate and extract an uploaded ZIP while its workspace is in use."""
     limits = limits or ArchiveLimits.from_settings()
     archive_name = _display_name(filename)
     if not archive_name.lower().endswith(".zip"):
@@ -254,7 +264,18 @@ def ingest_zip_upload(
         workspace = tmp_path / "repo"
         workspace.mkdir()
         result = extract_zip(archive_path, workspace, limits)
+        if not result.files:
+            raise ArchiveRejected("No supported source files were found in the archive.", 422)
+        yield IngestedRepository(
+            scan_id=scan_id,
+            workspace=workspace,
+            metadata=build_metadata(scan_id, archive_name, result),
+        )
 
-    if not result.files:
-        raise ArchiveRejected("No supported source files were found in the archive.", 422)
-    return build_metadata(scan_id, archive_name, result)
+
+def ingest_zip_upload(
+    source: BinaryIO, filename: str, limits: ArchiveLimits | None = None
+) -> RepositoryMetadata:
+    """Validate and extract an uploaded ZIP, return metadata, and clean up."""
+    with ingest_zip_workspace(source, filename, limits) as repo:
+        return repo.metadata

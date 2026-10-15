@@ -1,0 +1,1 @@
+"""Static-analysis scanner adapters."""

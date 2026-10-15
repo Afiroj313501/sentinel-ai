@@ -1,0 +1,33 @@
+rules:
+  - id: sentinel.python.eval-usage
+    languages: [python]
+    severity: ERROR
+    message: eval() executes arbitrary code if input is attacker-controlled.
+    pattern: eval(...)
+    metadata: {category: security, confidence: MEDIUM, cwe: CWE-95}
+  - id: sentinel.python.exec-usage
+    languages: [python]
+    severity: ERROR
+    message: exec() executes arbitrary code if input is attacker-controlled.
+    pattern: exec(...)
+    metadata: {category: security, confidence: MEDIUM, cwe: CWE-95}
+  - id: sentinel.python.subprocess-shell-true
+    languages: [python]
+    severity: ERROR
+    message: subprocess with shell=True can allow command injection.
+    pattern: subprocess.$FUNC(..., shell=True, ...)
+    metadata: {category: security, confidence: MEDIUM, cwe: CWE-78}
+  - id: sentinel.python.pickle-load
+    languages: [python]
+    severity: WARNING
+    message: Unpickling untrusted data can execute arbitrary code.
+    pattern-either:
+      - pattern: pickle.load(...)
+      - pattern: pickle.loads(...)
+    metadata: {category: security, confidence: MEDIUM, cwe: CWE-502}
+  - id: sentinel.javascript.eval-usage
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: eval() executes arbitrary code if input is attacker-controlled.
+    pattern: eval(...)
+    metadata: {category: security, confidence: MEDIUM, cwe: CWE-95}
