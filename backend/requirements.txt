@@ -4,3 +4,4 @@ pydantic-settings>=2.4
 python-multipart>=0.0.9
 bandit>=1.7
 pip-audit>=2.7
+sqlalchemy>=2.0

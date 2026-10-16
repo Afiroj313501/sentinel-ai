@@ -7,6 +7,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # backend/app/core/config.py -> repo root is three levels above this folder
 REPO_ROOT = Path(__file__).resolve().parents[3]
+BACKEND_DIR = REPO_ROOT / "backend"
 
 
 class Settings(BaseSettings):
@@ -23,6 +24,7 @@ class Settings(BaseSettings):
     max_total_extracted_bytes: int = 100 * 1024 * 1024
     max_extraction_seconds: float = 30.0
     scanner_timeout_seconds: float = 60.0
+    database_url: str = f"sqlite:///{(BACKEND_DIR / 'data' / 'sentinel.db').as_posix()}"
 
     model_config = SettingsConfigDict(
         env_file=REPO_ROOT / ".env",
