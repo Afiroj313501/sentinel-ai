@@ -54,3 +54,25 @@ class FindingRecord(Base):
     source: Mapped[str] = mapped_column(String(30))
 
     scan: Mapped[ScanRecord] = relationship(back_populates="findings")
+    explanation: Mapped[ExplanationRecord | None] = relationship(
+        back_populates="finding", cascade="all, delete-orphan", uselist=False
+    )
+
+
+class ExplanationRecord(Base):
+    """One AI explanation per finding, stored separately from scanner evidence."""
+
+    __tablename__ = "explanations"
+
+    finding_id: Mapped[str] = mapped_column(ForeignKey("findings.id"), primary_key=True)
+    scan_id: Mapped[str] = mapped_column(String(32), index=True)
+    provider: Mapped[str] = mapped_column(String(40))
+    model: Mapped[str] = mapped_column(String(100))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    summary: Mapped[str] = mapped_column(Text)
+    impact: Mapped[str] = mapped_column(Text)
+    confidence: Mapped[str] = mapped_column(String(10))
+    remediation: Mapped[str] = mapped_column(Text)
+    evidence_sufficient: Mapped[bool]
+
+    finding: Mapped[FindingRecord] = relationship(back_populates="explanation")

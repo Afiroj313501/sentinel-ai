@@ -2,7 +2,9 @@
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # backend/app/core/config.py -> repo root is three levels above this folder
@@ -25,6 +27,13 @@ class Settings(BaseSettings):
     max_extraction_seconds: float = 30.0
     scanner_timeout_seconds: float = 60.0
     database_url: str = f"sqlite:///{(BACKEND_DIR / 'data' / 'sentinel.db').as_posix()}"
+
+    # AI explanations
+    ai_provider: Literal["ollama", "openai_compatible"] = "ollama"
+    ai_model: str = "llama3.2:3b"
+    ai_base_url: str | None = None
+    ai_api_key: SecretStr | None = None
+    ai_timeout_seconds: float = 120.0
 
     model_config = SettingsConfigDict(
         env_file=REPO_ROOT / ".env",
