@@ -2,6 +2,7 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
 import SeverityBadge from "../common/SeverityBadge";
 import ExplanationPanel from "./ExplanationPanel";
+import FixPanel from "./FixPanel";
 import SnippetView from "./SnippetView";
 import type { Finding } from "../../types/finding";
 
@@ -60,6 +61,7 @@ export default function FindingCard({ finding }: FindingCardProps) {
             <p className="fine-print">No source snippet is available for this finding.</p>
           )}
           <ExplanationPanel findingId={finding.id} />
+          <FixPanel findingId={finding.id} />
         </div>
       )}
     </li>
