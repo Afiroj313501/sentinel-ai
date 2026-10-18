@@ -1,33 +1,48 @@
-"""Scan routes: create a scan from an upload, browse history, and query findings."""
+﻿"""Scan routes: create a scan from an upload, browse history, query findings, export reports."""
 
 import logging
+from typing import Literal
 
 from fastapi import APIRouter, Depends, File, HTTPException, Path, Query, Response, UploadFile
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.db.repository import FindingFilters, delete_scan, get_scan, list_scans, query_findings, save_scan
+from app.db.repository import (
+    FindingFilters,
+    delete_scan,
+    get_scan,
+    list_scans,
+    query_findings,
+    save_scan,
+)
 from app.db.session import get_db
 from app.schemas.finding import Category, ScanResult, Severity
 from app.schemas.history import SCAN_ID_PATTERN, FindingsPage, ScanDetail, ScanListPage
 from app.services.history_service import to_detail, to_finding, to_summary
+from app.services.report_service import build_report, render_json, render_markdown
 from app.services.repository_service import ArchiveRejected
-from app.services.scan_service import NOTICE, run_zip_scan
+from app.services.scan_service import NOTICE, ScanBusy, run_zip_scan
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/scans", tags=["scans"])
 
-
 @router.post("/upload", response_model=ScanResult)
 def upload_repository(
     file: UploadFile = File(...), session: Session = Depends(get_db)
 ) -> ScanResult:
-    """Accept a ZIP archive, safely extract it, scan it, store it, and return findings."""
+    """Accept a ZIP archive, validate and extract it safely, scan it, store and return results."""
     try:
         result = run_zip_scan(file.file, file.filename or "")
+    except ScanBusy as exc:
+        raise HTTPException(
+            status_code=429,
+            detail="The server is busy with other scans. Try again shortly.",
+            headers={"Retry-After": "15"},
+        ) from exc
     except ArchiveRejected as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.message) from exc
+
     try:
         save_scan(session, result)
     except SQLAlchemyError:
@@ -38,7 +53,6 @@ def upload_repository(
         )
     return result
 
-
 @router.get("", response_model=ScanListPage)
 def list_scan_history(
     limit: int = Query(default=20, ge=1, le=100),
@@ -47,9 +61,8 @@ def list_scan_history(
 ) -> ScanListPage:
     total, records = list_scans(session, limit, offset)
     return ScanListPage(
-        total=total, limit=limit, offset=offset, items=[to_summary(record) for record in records]
+        total=total, limit=limit, offset=offset, items=[to_summary(r) for r in records]
     )
-
 
 @router.get("/{scan_id}", response_model=ScanDetail)
 def get_scan_detail(
@@ -59,7 +72,6 @@ def get_scan_detail(
     if record is None:
         raise HTTPException(status_code=404, detail="Scan not found.")
     return to_detail(record, NOTICE)
-
 
 @router.get("/{scan_id}/findings", response_model=FindingsPage)
 def list_findings(
@@ -75,23 +87,45 @@ def list_findings(
 ) -> FindingsPage:
     if get_scan(session, scan_id) is None:
         raise HTTPException(status_code=404, detail="Scan not found.")
-    total, records = query_findings(
-        session,
-        scan_id,
-        FindingFilters(
-            severities=list(severity),
-            categories=list(category),
-            scanners=scanner,
-            search=q,
-            file_path=file_path,
-        ),
-        limit,
-        offset,
+    filters = FindingFilters(
+        severities=list(severity),
+        categories=list(category),
+        scanners=scanner,
+        search=q,
+        file_path=file_path,
     )
+    total, records = query_findings(session, scan_id, filters, limit, offset)
     return FindingsPage(
-        total=total, limit=limit, offset=offset, items=[to_finding(record) for record in records]
+        total=total, limit=limit, offset=offset, items=[to_finding(r) for r in records]
     )
 
+@router.get("/{scan_id}/report")
+def download_report(
+    scan_id: str = Path(pattern=SCAN_ID_PATTERN),
+    report_format: Literal["json", "markdown"] = Query(default="json", alias="format"),
+    include_ai: bool = Query(default=False),
+    session: Session = Depends(get_db),
+) -> Response:
+    """Download a report. Scanner evidence comes first; AI content is opt-in and labeled."""
+    report = build_report(session, scan_id, include_ai)
+    if report is None:
+        raise HTTPException(status_code=404, detail="Scan not found.")
+
+    if report_format == "markdown":
+        body, media_type, extension = render_markdown(report), "text/markdown; charset=utf-8", "md"
+    else:
+        body, media_type, extension = render_json(report), "application/json", "json"
+
+    filename = f"sentinel-report-{scan_id[:8]}.{extension}"
+    return Response(
+        content=body,
+        media_type=media_type,
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Cache-Control": "no-store",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
 
 @router.delete("/{scan_id}", status_code=204)
 def remove_scan(

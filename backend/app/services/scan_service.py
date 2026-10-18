@@ -1,16 +1,17 @@
-"""Scan orchestration for uploaded repositories."""
+﻿"""Scan orchestration: ingest a repository, run scanners, merge normalized results."""
 
 from __future__ import annotations
 
 import logging
+import threading
 import time
 from collections.abc import Sequence
 from pathlib import Path
 from typing import BinaryIO
 
 from app.core.config import get_settings
-from app.scanners.base import Scanner, ScannerOutcome, build_outcome
 from app.scanners.bandit_scanner import BanditScanner
+from app.scanners.base import Scanner, ScannerOutcome, build_outcome
 from app.scanners.npm_audit_scanner import NpmAuditScanner
 from app.scanners.pip_audit_scanner import PipAuditScanner
 from app.scanners.semgrep_scanner import SemgrepScanner
@@ -20,32 +21,69 @@ from app.services.normalization_service import count_by_severity, finalize_findi
 from app.services.repository_service import ArchiveLimits, ingest_zip_workspace
 
 logger = logging.getLogger(__name__)
-NOTICE = "Findings come from the scanners listed in scanner_runs. An empty or short list does not prove the code is secure: scanners cover only specific rules and languages, and some may have been unavailable or failed."
 
+NOTICE = (
+    "Findings come from the scanners listed in scanner_runs. An empty or short list does "
+    "not prove the code is secure: scanners cover only specific rules and languages, and "
+    "some may have been unavailable or failed."
+)
+
+# Scans are CPU- and subprocess-heavy, so only a few may run at once.
+MAX_CONCURRENT_SCANS = 2
+_scan_slots = threading.BoundedSemaphore(MAX_CONCURRENT_SCANS)
+
+class ScanBusy(Exception):
+    """All scan slots are in use."""
 
 def default_scanners() -> list[Scanner]:
     return [BanditScanner(), SemgrepScanner(), PipAuditScanner(), NpmAuditScanner()]
 
-
-def _run_scanner(scanner: Scanner, workspace: Path, scan_id: str, timeout: float) -> ScannerOutcome:
+def _run_scanner(
+    scanner: Scanner, workspace: Path, scan_id: str, timeout: float
+) -> ScannerOutcome:
+    """Run one scanner; an unexpected crash becomes a 'failed' run, never an API error."""
     started = time.monotonic()
     try:
         return scanner.scan(workspace, scan_id, timeout)
     except Exception:
         logger.exception("Scanner %s failed unexpectedly", scanner.name)
-        return build_outcome(scanner.name, "failed", started, message="Scanner failed unexpectedly.")
+        return build_outcome(
+            scanner.name, "failed", started, message="Scanner failed unexpectedly."
+        )
 
+def build_scan_result(
+    metadata: RepositoryMetadata, outcomes: Sequence[ScannerOutcome]
+) -> ScanResult:
+    findings = finalize_findings(
+        [finding for outcome in outcomes for finding in outcome.findings],
+        metadata.scan_id,
+    )
+    return ScanResult(
+        metadata=metadata,
+        scanner_runs=[outcome.run for outcome in outcomes],
+        findings=findings,
+        severity_counts=count_by_severity(findings),
+        notice=NOTICE,
+    )
 
-def build_scan_result(metadata: RepositoryMetadata, outcomes: Sequence[ScannerOutcome]) -> ScanResult:
-    findings = finalize_findings([f for outcome in outcomes for f in outcome.findings], metadata.scan_id)
-    return ScanResult(metadata=metadata, scanner_runs=[o.run for o in outcomes], findings=findings,
-                      severity_counts=count_by_severity(findings), notice=NOTICE)
+def run_zip_scan(
+    source: BinaryIO,
+    filename: str,
+    limits: ArchiveLimits | None = None,
+    scanners: Sequence[Scanner] | None = None,
+) -> ScanResult:
+    """Ingest an uploaded ZIP and run every scanner on the extracted workspace."""
+    if not _scan_slots.acquire(blocking=False):
+        raise ScanBusy()
+    try:
+        timeout = get_settings().scanner_timeout_seconds
+        active = list(scanners) if scanners is not None else default_scanners()
 
-
-def run_zip_scan(source: BinaryIO, filename: str, limits: ArchiveLimits | None = None,
-                 scanners: Sequence[Scanner] | None = None) -> ScanResult:
-    timeout = get_settings().scanner_timeout_seconds
-    active = list(scanners) if scanners is not None else default_scanners()
-    with ingest_zip_workspace(source, filename, limits) as repo:
-        outcomes = [_run_scanner(scanner, repo.workspace, repo.metadata.scan_id, timeout) for scanner in active]
+        with ingest_zip_workspace(source, filename, limits) as repo:
+            outcomes = [
+                _run_scanner(scanner, repo.workspace, repo.metadata.scan_id, timeout)
+                for scanner in active
+            ]
         return build_scan_result(repo.metadata, outcomes)
+    finally:
+        _scan_slots.release()
