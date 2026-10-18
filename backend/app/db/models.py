@@ -57,6 +57,9 @@ class FindingRecord(Base):
     explanation: Mapped[ExplanationRecord | None] = relationship(
         back_populates="finding", cascade="all, delete-orphan", uselist=False
     )
+    fix_suggestion: Mapped[FixSuggestionRecord | None] = relationship(
+        back_populates="finding", cascade="all, delete-orphan", uselist=False
+    )
 
 
 class ExplanationRecord(Base):
@@ -76,3 +79,22 @@ class ExplanationRecord(Base):
     evidence_sufficient: Mapped[bool]
 
     finding: Mapped[FindingRecord] = relationship(back_populates="explanation")
+
+
+class FixSuggestionRecord(Base):
+    """One proposed patch per finding, stored as text for human review."""
+
+    __tablename__ = "fix_suggestions"
+
+    finding_id: Mapped[str] = mapped_column(ForeignKey("findings.id"), primary_key=True)
+    scan_id: Mapped[str] = mapped_column(String(32), index=True)
+    file_path: Mapped[str] = mapped_column(String(500))
+    provider: Mapped[str] = mapped_column(String(40))
+    model: Mapped[str] = mapped_column(String(100))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    can_fix: Mapped[bool]
+    rationale: Mapped[str] = mapped_column(Text)
+    diff: Mapped[str | None] = mapped_column(Text, nullable=True)
+    syntax_check: Mapped[str] = mapped_column(String(12))
+
+    finding: Mapped[FindingRecord] = relationship(back_populates="fix_suggestion")

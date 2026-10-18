@@ -10,6 +10,7 @@ from app.core.security import UnsafePathError, ensure_within
 from app.schemas.finding import Finding, SEVERITY_ORDER
 
 EVIDENCE_MAX_CHARS = 500
+SNIPPET_MAX_CHARS = 2000
 
 
 def normalize_severity(raw: object) -> str:
@@ -58,7 +59,10 @@ def read_snippet(workspace: Path, relative_path: str, line_start: int, line_end:
     first = max(1, line_start - 2)
     last = min(len(lines), max(line_start, line_end) + 2)
     width = len(str(last))
-    return truncate("\n".join(f"{n:>{width}} | {lines[n - 1]}" for n in range(first, last + 1)), 2000)
+    return truncate(
+        "\n".join(f"{n:>{width}} | {lines[n - 1]}" for n in range(first, last + 1)),
+        SNIPPET_MAX_CHARS,
+    )
 
 
 def finalize_findings(findings: list[Finding], scan_id: str) -> list[Finding]:

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
+import { FileArchive, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Upload } from "lucide-react";
 import { uploadScan } from "../services/api";
 import { formatBytes } from "../services/format";
 
@@ -42,15 +42,40 @@ export default function NewScan() {
   }
 
   return (
-    <div className="max-w-xl">
-      <h1 className="text-2xl font-semibold">New scan</h1>
-      <p className="mt-2 text-sm text-gray-600">Upload a ZIP of your source code. Files are analyzed on the server and are never executed. Maximum size: {formatBytes(MAX_UPLOAD_BYTES)}. Dependency checks need internet access.</p>
-      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-        <input type="file" accept=".zip,application/zip" onChange={handleFileChange} disabled={scanning} className="block w-full text-sm text-gray-700 file:mr-4 file:rounded-md file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100" />
-        {file && !scanning && <p className="text-sm text-gray-600">Selected: {file.name} ({formatBytes(file.size)})</p>}
-        {error && <p role="alert" className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>}
-        {scanning && <p role="status" className="text-sm text-gray-600">Scanning... this can take a minute or two. Please keep this page open.</p>}
-        <button type="submit" disabled={!file || scanning} className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"><Upload className="h-4 w-4" aria-hidden="true" />{scanning ? "Scanning..." : "Start scan"}</button>
+    <div className="new-scan-page">
+      <section className="welcome">
+        <div>
+          <div className="eyebrow">SECURITY WORKSPACE</div>
+          <h1>New scan</h1>
+          <p>Upload a repository and let Sentinel analyze it for security findings.</p>
+        </div>
+      </section>
+
+      <form className="card upload-card" onSubmit={handleSubmit}>
+        <div className="upload-header">
+          <div className="upload-icon"><Upload aria-hidden="true" /></div>
+          <div>
+            <h2>Upload source code</h2>
+            <p>Choose a ZIP archive containing the repository you want to scan.</p>
+          </div>
+        </div>
+        <label className="dropzone">
+          <FileArchive aria-hidden="true" />
+          <strong>{file ? file.name : "Choose a ZIP file"}</strong>
+          <span>{file ? `${formatBytes(file.size)} selected` : `Maximum size ${formatBytes(MAX_UPLOAD_BYTES)}`}</span>
+          <input type="file" accept=".zip,application/zip" onChange={handleFileChange} disabled={scanning} />
+        </label>
+        <div className="scan-notes">
+          <span>Files are analyzed on the server and are never executed.</span>
+          <span>Dependency checks need internet access.</span>
+        </div>
+        {error && <p role="alert" className="scan-error">{error}</p>}
+        {scanning && <p role="status" className="scan-progress">Scanning... this can take a minute or two. Please keep this page open.</p>}
+        <div className="upload-actions">
+          <button type="submit" disabled={!file || scanning} className="btn btn-primary">
+            <Upload aria-hidden="true" />{scanning ? "Scanning..." : "Start scan"}
+          </button>
+        </div>
       </form>
     </div>
   );

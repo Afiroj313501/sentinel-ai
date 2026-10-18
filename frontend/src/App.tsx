@@ -4,13 +4,15 @@ import Dashboard from "./pages/Dashboard";
 import NewScan from "./pages/NewScan";
 import NotFound from "./pages/NotFound";
 import ScanDetails from "./pages/ScanDetails";
+import Overview from "./pages/Overview";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route element={<Layout />}>
-          <Route index element={<Dashboard />} />
+          <Route index element={<Overview />} />
+          <Route path="history" element={<Dashboard />} />
           <Route path="new" element={<NewScan />} />
           <Route path="scans/:scanId" element={<ScanDetails />} />
           <Route path="*" element={<NotFound />} />

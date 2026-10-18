@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import findings, health, scans
+from app.api.routes import findings, fixes, health, scans
 from app.core.config import get_settings
 from app.db.session import init_db
 
@@ -34,6 +34,7 @@ def create_app() -> FastAPI:
     application.include_router(health.router, prefix="/api")
     application.include_router(scans.router, prefix="/api")
     application.include_router(findings.router, prefix="/api")
+    application.include_router(fixes.router, prefix="/api")
     return application
 
 
