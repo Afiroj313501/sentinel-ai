@@ -27,7 +27,7 @@ async function errorMessage(response: Response): Promise<string> {
   return `Request failed with status ${response.status}.`;
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`${API_BASE_URL}${path}`, init);

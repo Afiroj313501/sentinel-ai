@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import SeverityBadge from "../common/SeverityBadge";
+import ExplanationPanel from "./ExplanationPanel";
 import SnippetView from "./SnippetView";
 import type { Finding } from "../../types/finding";
 
@@ -29,6 +30,7 @@ export default function FindingCard({ finding }: { finding: Finding }) {
             <p className="mt-1 text-xs text-gray-500">Confidence: {finding.confidence}{finding.cwe ? ` · ${finding.cwe}` : ""}</p>
           </div>
           {finding.snippet ? <SnippetView snippet={finding.snippet} lineStart={finding.line_start} lineEnd={finding.line_end} /> : <p className="text-xs text-gray-500">No source snippet is available for this finding.</p>}
+          <ExplanationPanel findingId={finding.id} />
         </div>
       )}
     </li>
