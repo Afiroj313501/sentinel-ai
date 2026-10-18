@@ -27,6 +27,6 @@ export default function Layout() {
       <div className="side-bottom"><BackendStatus /></div>
     </aside>
     <main><header className="topbar"><div style={{ display: "flex", alignItems: "center", gap: 12 }}><button type="button" className="icon-btn mobile-menu" aria-label="Toggle menu" aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)}><Menu size={18} aria-hidden="true" /></button><div className="crumb">Workspace <span style={{ padding: "0 7px", color: "var(--line)" }}>/</span> <b>{pageLabel(pathname)}</b></div></div><div className="top-actions"><Link to="/new" className="btn btn-primary"><Plus aria-hidden="true" />New scan</Link></div></header>
-      <div className="content">{pathname === "/" || pathname === "/new" || pathname === "/history" ? <Outlet /> : <div className="legacy"><Outlet /></div>}</div></main>
+      <div className="content"><Outlet /></div></main>
   </div></div>;
 }

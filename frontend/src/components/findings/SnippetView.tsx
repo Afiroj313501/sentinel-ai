@@ -1,9 +1,10 @@
-interface SnippetViewProps {
+﻿interface SnippetViewProps {
   snippet: string;
   lineStart: number;
   lineEnd: number;
 }
 
+// The backend formats each snippet line as "<number> | <code>".
 const LINE_PATTERN = /^\s*(\d+) \| ?(.*)$/;
 
 interface Row {
@@ -18,22 +19,16 @@ function parseRows(snippet: string): Row[] {
   });
 }
 
+/** Shows scanner-captured source. Content is rendered as text, never as HTML. */
 export default function SnippetView({ snippet, lineStart, lineEnd }: SnippetViewProps) {
   return (
-    <div
-      role="region"
-      aria-label="Source snippet"
-      tabIndex={0}
-      className="overflow-x-auto rounded-md bg-gray-900 py-2 font-mono text-xs text-gray-100"
-    >
+    <div className="snippet" role="region" aria-label="Source snippet" tabIndex={0}>
       {parseRows(snippet).map((row, index) => {
         const flagged = row.number !== null && row.number >= lineStart && row.number <= lineEnd;
         return (
-          <div key={index} className={`flex px-3 ${flagged ? "bg-amber-400/20" : ""}`}>
-            <span className="w-10 shrink-0 select-none pr-3 text-right text-gray-500">
-              {row.number ?? ""}
-            </span>
-            <span className="whitespace-pre">{row.code}</span>
+          <div key={index} className={`snippet-row${flagged ? " flagged" : ""}`}>
+            <span className="snippet-num">{row.number ?? ""}</span>
+            <span className="snippet-code">{row.code}</span>
           </div>
         );
       })}

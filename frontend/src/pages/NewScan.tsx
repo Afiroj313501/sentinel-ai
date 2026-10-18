@@ -1,16 +1,19 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
-import { FileArchive, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Upload } from "lucide-react";
 import { uploadScan } from "../services/api";
 import { formatBytes } from "../services/format";
 
 const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 
+// Quick client-side checks to save a pointless upload. The server stays the authority.
 function validateFile(file: File): string | null {
   if (!file.name.toLowerCase().endsWith(".zip")) return "Please choose a .zip file.";
   if (file.size === 0) return "That file is empty.";
-  if (file.size > MAX_UPLOAD_BYTES) return `That file is ${formatBytes(file.size)}. The limit is ${formatBytes(MAX_UPLOAD_BYTES)}.`;
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return `That file is ${formatBytes(file.size)}. The limit is ${formatBytes(MAX_UPLOAD_BYTES)}.`;
+  }
   return null;
 }
 
@@ -42,41 +45,51 @@ export default function NewScan() {
   }
 
   return (
-    <div className="new-scan-page">
+    <div>
       <section className="welcome">
         <div>
-          <div className="eyebrow">SECURITY WORKSPACE</div>
-          <h1>New scan</h1>
-          <p>Upload a repository and let Sentinel analyze it for security findings.</p>
+          <div className="eyebrow">NEW SCAN</div>
+          <h1>Scan a repository</h1>
+          <p>
+            Upload a ZIP of your source code. Files are analyzed on the server and never executed.
+            Maximum size: {formatBytes(MAX_UPLOAD_BYTES)}. Dependency checks need internet access.
+          </p>
         </div>
       </section>
 
-      <form className="card upload-card" onSubmit={handleSubmit}>
-        <div className="upload-header">
-          <div className="upload-icon"><Upload aria-hidden="true" /></div>
+      <article className="card pad" style={{ maxWidth: 640 }}>
+        <form onSubmit={handleSubmit} className="stack">
+          <input
+            type="file"
+            accept=".zip,application/zip"
+            onChange={handleFileChange}
+            disabled={scanning}
+            className="file-input"
+            aria-label="Repository ZIP file"
+          />
+          {file && !scanning && (
+            <p className="small muted" style={{ margin: 0 }}>
+              Selected: {file.name} ({formatBytes(file.size)})
+            </p>
+          )}
+          {error && (
+            <p role="alert" className="alert alert-error">
+              {error}
+            </p>
+          )}
+          {scanning && (
+            <p role="status" className="alert alert-info">
+              Scanning... this can take a minute or two. Please keep this page open.
+            </p>
+          )}
           <div>
-            <h2>Upload source code</h2>
-            <p>Choose a ZIP archive containing the repository you want to scan.</p>
+            <button type="submit" className="btn btn-primary" disabled={!file || scanning}>
+              <Upload aria-hidden="true" />
+              {scanning ? "Scanning..." : "Start scan"}
+            </button>
           </div>
-        </div>
-        <label className="dropzone">
-          <FileArchive aria-hidden="true" />
-          <strong>{file ? file.name : "Choose a ZIP file"}</strong>
-          <span>{file ? `${formatBytes(file.size)} selected` : `Maximum size ${formatBytes(MAX_UPLOAD_BYTES)}`}</span>
-          <input type="file" accept=".zip,application/zip" onChange={handleFileChange} disabled={scanning} />
-        </label>
-        <div className="scan-notes">
-          <span>Files are analyzed on the server and are never executed.</span>
-          <span>Dependency checks need internet access.</span>
-        </div>
-        {error && <p role="alert" className="scan-error">{error}</p>}
-        {scanning && <p role="status" className="scan-progress">Scanning... this can take a minute or two. Please keep this page open.</p>}
-        <div className="upload-actions">
-          <button type="submit" disabled={!file || scanning} className="btn btn-primary">
-            <Upload aria-hidden="true" />{scanning ? "Scanning..." : "Start scan"}
-          </button>
-        </div>
-      </form>
+        </form>
+      </article>
     </div>
   );
 }

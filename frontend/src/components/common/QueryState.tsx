@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
 import type { ApiState } from "../../hooks/useApi";
 
 interface QueryStateProps<T> {
@@ -8,12 +8,16 @@ interface QueryStateProps<T> {
 }
 
 export default function QueryState<T>({ state, onRetry, children }: QueryStateProps<T>) {
-  if (state.status === "loading") return <p className="empty">Loading...</p>;
+  if (state.status === "loading") {
+    return <p className="empty">Loading...</p>;
+  }
   if (state.status === "error") {
     return (
-      <div role="alert" className="scan-error">
-        <p>{state.message}</p>
-        <button type="button" onClick={onRetry} className="mt-2 font-medium underline">Try again</button>
+      <div role="alert" className="alert alert-error">
+        <span>{state.message}</span>
+        <button type="button" onClick={onRetry} className="text-btn">
+          Try again
+        </button>
       </div>
     );
   }
