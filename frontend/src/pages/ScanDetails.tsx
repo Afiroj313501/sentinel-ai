@@ -4,6 +4,7 @@ import QueryState from "../components/common/QueryState";
 import SeverityBadge from "../components/common/SeverityBadge";
 import StatusBadge from "../components/common/StatusBadge";
 import FindingsSection from "../components/findings/FindingsSection";
+import ReportCard from "../components/reports/ReportCard";
 import { useApi } from "../hooks/useApi";
 import { fetchScan } from "../services/api";
 import { formatBytes, formatDate } from "../services/format";
@@ -120,6 +121,8 @@ export default function ScanDetails() {
               </article>
 
               <p className="alert alert-warn">{scan.notice}</p>
+
+              <ReportCard scanId={scanId} />
 
               <FindingsSection scanId={scanId} scanners={scan.scanner_runs.map((run) => run.scanner)} />
             </div>

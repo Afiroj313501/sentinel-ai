@@ -77,3 +77,21 @@ export function fetchFindings(
   params.set("offset", String(query.offset));
   return request<FindingsPage>(`/api/scans/${encodeURIComponent(scanId)}/findings?${params}`, { signal });
 }
+
+export async function fetchReportBlob(
+  scanId: string,
+  format: "json" | "markdown",
+  includeAi: boolean,
+): Promise<Blob> {
+  const params = new URLSearchParams({ format, include_ai: String(includeAi) });
+  let response: Response;
+  try {
+    response = await fetch(
+      `${API_BASE_URL}/api/scans/${encodeURIComponent(scanId)}/report?${params}`,
+    );
+  } catch {
+    throw new ApiError("Cannot reach the Sentinel backend. Is it running?", 0);
+  }
+  if (!response.ok) throw new ApiError(await errorMessage(response), response.status);
+  return response.blob();
+}
