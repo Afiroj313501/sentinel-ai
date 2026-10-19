@@ -7,7 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import findings, fixes, health, scans
+from app.api.routes import findings, fixes, github, health, scans
 from app.core.config import get_settings
 from app.core.middleware import (
     MULTIPART_OVERHEAD_BYTES,
@@ -15,6 +15,9 @@ from app.core.middleware import (
     UploadLimitMiddleware,
 )
 from app.db.session import init_db
+
+GITHUB_SCAN_PATH = "/api/scans/github"
+GITHUB_BODY_LIMIT_BYTES = 4096
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
@@ -39,6 +42,11 @@ def create_app() -> FastAPI:
         limit=lambda: get_settings().max_upload_bytes + MULTIPART_OVERHEAD_BYTES,
     )
     application.add_middleware(
+        UploadLimitMiddleware,
+        limit=lambda: GITHUB_BODY_LIMIT_BYTES,
+        path=GITHUB_SCAN_PATH,
+    )
+    application.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_methods=["GET", "POST", "DELETE"],
@@ -48,6 +56,7 @@ def create_app() -> FastAPI:
 
     application.include_router(health.router, prefix="/api")
     application.include_router(scans.router, prefix="/api")
+    application.include_router(github.router, prefix="/api")
     application.include_router(findings.router, prefix="/api")
     application.include_router(fixes.router, prefix="/api")
     return application

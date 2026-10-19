@@ -60,6 +60,7 @@ class ArchiveLimits:
     max_file_bytes: int = 1024 * 1024
     max_total_extracted_bytes: int = 100 * 1024 * 1024
     max_extraction_seconds: float = 30.0
+    lenient: bool = False
 
     @classmethod
     def from_settings(cls) -> ArchiveLimits:
@@ -110,29 +111,40 @@ def save_upload(source: BinaryIO, destination: Path, max_bytes: int) -> int:
 
 
 def _validate_entries(
-    infos: list[zipfile.ZipInfo],
-) -> list[tuple[zipfile.ZipInfo, PurePosixPath]]:
-    """Check every entry, including ones we will not extract."""
+    infos: list[zipfile.ZipInfo], lenient: bool = False
+) -> tuple[list[tuple[zipfile.ZipInfo, PurePosixPath]], int]:
+    """Check every entry, optionally skipping unsafe GitHub entries."""
     planned: list[tuple[zipfile.ZipInfo, PurePosixPath]] = []
     seen: set[str] = set()
+    skipped = 0
     for info in infos:
         try:
             rel = normalize_member_name(info.filename)
         except UnsafePathError as exc:
+            if lenient:
+                skipped += 1
+                continue
             raise ArchiveRejected(f"Archive contains an unsafe entry: {exc}.") from exc
         if info.flag_bits & 0x1:
             raise ArchiveRejected("Encrypted archives are not supported.")
         mode = info.external_attr >> 16
-        if stat.S_ISLNK(mode):
-            raise ArchiveRejected("Archive contains a symbolic link.")
-        if stat.S_IFMT(mode) not in (0, stat.S_IFREG, stat.S_IFDIR):
+        is_symlink = stat.S_ISLNK(mode)
+        if is_symlink or stat.S_IFMT(mode) not in (0, stat.S_IFREG, stat.S_IFDIR):
+            if lenient:
+                skipped += 1
+                continue
+            if is_symlink:
+                raise ArchiveRejected("Archive contains a symbolic link.")
             raise ArchiveRejected("Archive contains a special file entry.")
         key = str(rel).lower()
         if key in seen:
+            if lenient:
+                skipped += 1
+                continue
             raise ArchiveRejected("Archive contains duplicate entries.")
         seen.add(key)
         planned.append((info, rel))
-    return planned
+    return planned, skipped
 
 
 def _strip_common_root(
@@ -194,7 +206,9 @@ def extract_zip(archive_path: Path, dest: Path, limits: ArchiveLimits) -> Extrac
             infos = zf.infolist()
             if len(infos) > limits.max_archive_entries:
                 raise ArchiveRejected("Archive contains too many entries.")
-            planned = _strip_common_root(_validate_entries(infos))
+            planned_entries, unsafe_skipped = _validate_entries(infos, limits.lenient)
+            planned = _strip_common_root(planned_entries)
+            result.skipped += unsafe_skipped
 
             for info, rel in planned:
                 if time.monotonic() >= deadline:
