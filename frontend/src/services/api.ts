@@ -50,6 +50,15 @@ export function uploadScan(file: File, signal?: AbortSignal): Promise<ScanResult
   return request<ScanResult>("/api/scans/upload", { method: "POST", body: form, signal });
 }
 
+export function scanGithub(url: string, signal?: AbortSignal): Promise<ScanResult> {
+  return request<ScanResult>("/api/scans/github", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url }),
+    signal,
+  });
+}
+
 export function fetchScans(limit: number, offset: number, signal?: AbortSignal): Promise<ScanListPage> {
   return request<ScanListPage>(`/api/scans?limit=${limit}&offset=${offset}`, { signal });
 }
