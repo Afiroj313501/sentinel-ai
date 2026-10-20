@@ -1,4 +1,6 @@
-# Sentinel AI
+﻿# Sentinel AI
+
+[![CI](https://github.com/Afiroj313501/sentinel-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/Afiroj313501/sentinel-ai/actions/workflows/ci.yml)
 
 Sentinel AI is a FastAPI and React application that accepts a repository ZIP or a public GitHub repository URL, extracts supported source files without executing them, runs available static and dependency scanners, stores normalized findings in SQLite, and presents scan history, reports, and finding details in a browser interface. Optional AI explanations and fix suggestions are generated separately from scanner evidence, labeled as AI-generated, validated, and kept for human review.
 
