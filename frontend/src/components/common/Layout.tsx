@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { History, LayoutDashboard, Menu, Plus, Upload } from "lucide-react";
 import BackendStatus from "./BackendStatus";
@@ -13,8 +13,8 @@ function pageLabel(pathname: string): string {
 
 export default function Layout() {
   const { pathname } = useLocation();
-  const [menuOpen, setMenuOpen] = useState(false);
-  useEffect(() => setMenuOpen(false), [pathname]);
+  const [openOn, setOpenOn] = useState<string | null>(null);
+  const menuOpen = openOn === pathname;
   const historyActive = pathname === "/history" || pathname.startsWith("/scans/");
   return <div className="app"><div className="layout">
     <aside className={`sidebar${menuOpen ? " open" : ""}`}>
@@ -26,7 +26,7 @@ export default function Layout() {
       </nav></div>
       <div className="side-bottom"><BackendStatus /></div>
     </aside>
-    <main><header className="topbar"><div style={{ display: "flex", alignItems: "center", gap: 12 }}><button type="button" className="icon-btn mobile-menu" aria-label="Toggle menu" aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)}><Menu size={18} aria-hidden="true" /></button><div className="crumb">Workspace <span style={{ padding: "0 7px", color: "var(--line)" }}>/</span> <b>{pageLabel(pathname)}</b></div></div><div className="top-actions"><Link to="/new" className="btn btn-primary"><Plus aria-hidden="true" />New scan</Link></div></header>
+    <main><header className="topbar"><div style={{ display: "flex", alignItems: "center", gap: 12 }}><button type="button" className="icon-btn mobile-menu" aria-label="Toggle menu" aria-expanded={menuOpen} onClick={() => setOpenOn(menuOpen ? null : pathname)}><Menu size={18} aria-hidden="true" /></button><div className="crumb">Workspace <span style={{ padding: "0 7px", color: "var(--line)" }}>/</span> <b>{pageLabel(pathname)}</b></div></div><div className="top-actions"><Link to="/new" className="btn btn-primary"><Plus aria-hidden="true" />New scan</Link></div></header>
       <div className="content"><Outlet /></div></main>
   </div></div>;
 }

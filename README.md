@@ -40,6 +40,9 @@ flowchart TD
 
 ## Getting started on Windows 11 PowerShell
 
+Use Node.js `^20.19.0` or `>=22.12.0` for the frontend (the requirement from the
+checked-in Vite version).
+
 From PowerShell:
 
 ```powershell
