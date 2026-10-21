@@ -139,7 +139,10 @@ Set-Location backend
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-The frontend package provides `npm run build` and `npm run lint`. There are no frontend unit tests in the current project.
+Frontend unit tests run with Vitest (`npm test` in `frontend`). They cover the
+GitHub URL checker, the diff and snippet parsers, the formatting helpers, and
+the API client. There are no component or end-to-end tests, so the UI itself is
+checked manually.
 
 ## Security design summary
 
@@ -156,7 +159,6 @@ These controls reduce risk but do not prove that scanned code is secure and do n
 - pip-audit checks only exact `name==version` entries from `requirements.txt`; npm audit uses `package-lock.json` beside `package.json`.
 - Semgrep is optional and may be unavailable on native Windows.
 - The current scanner set does not include ESLint.
-- There are no frontend unit tests.
 - A short or empty result does not prove the code is secure because scanners cover only supported rules, languages, and dependency inputs.
 - Fix suggestions are untested diffs and are never applied automatically.
 

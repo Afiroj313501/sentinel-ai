@@ -6,16 +6,16 @@ export function formatShortDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-export function formatRelative(iso: string): string {
-  const elapsed = Date.now() - new Date(iso).getTime();
-  const minutes = Math.max(0, Math.floor(elapsed / 60000));
+export function formatRelative(iso: string, now = Date.now()): string {
+  const elapsed = now - new Date(iso).getTime();
+  const minutes = Math.max(0, Math.floor((elapsed + 15000) / 60000));
   if (minutes < 1) return "just now";
   if (minutes < 60) return `${minutes}m ago`;
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d ago`;
-  return formatShortDate(iso);
+  if (days < 14) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString();
 }
 
 export function formatBytes(bytes: number): string {
