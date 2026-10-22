@@ -15,6 +15,15 @@ Sentinel AI is a FastAPI and React application that accepts a repository ZIP or 
 - Request cached or refreshed AI explanations and fix suggestions for findings.
 - Apply upload, archive, extraction, subprocess, and concurrency limits.
 
+## Screenshots
+
+| Overview | Scan details |
+|---|---|
+| ![Overview dashboard](docs/screenshots/overview.png) | ![Scan details with coverage and findings](docs/screenshots/scan-details.png) |
+
+| New scan | Finding with AI explanation and suggested fix |
+|---|---|
+| ![New scan page](docs/screenshots/new-scan.png) | ![Finding with AI help](docs/screenshots/finding-ai.png) |
 ## How it works
 
 ```mermaid
