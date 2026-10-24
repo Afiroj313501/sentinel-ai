@@ -1,7 +1,7 @@
 fastapi>=0.115
 uvicorn[standard]>=0.30
 pydantic-settings>=2.4
-python-multipart>=0.0.9
+python-multipart>=0.0.32
 bandit>=1.7
 pip-audit>=2.7
 sqlalchemy>=2.0
