@@ -1,0 +1,12 @@
+.git
+.github
+.venv
+node_modules
+frontend/dist
+backend/data/*.db
+backend/data/*.db-journal
+backend/data/*.db-wal
+backend/.pytest_cache
+backend/**/__pycache__
+sample-repos
+docs

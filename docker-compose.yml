@@ -1,0 +1,27 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    volumes:
+      - sentinel-data:/app/backend/data
+    environment:
+      - SENTINEL_ENVIRONMENT=production
+      - SENTINEL_CORS_ORIGINS=["http://localhost", "http://localhost:80", "http://127.0.0.1"]
+    expose:
+      - "8000"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  sentinel-data:
