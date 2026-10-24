@@ -1,6 +1,6 @@
 fastapi>=0.115
 uvicorn[standard]>=0.30
-pydantic-settings>=2.4
+pydantic-settings>=2.16.1
 python-multipart>=0.0.9
 bandit>=1.7
 pip-audit>=2.7
