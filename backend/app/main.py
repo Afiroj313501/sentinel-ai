@@ -1,4 +1,4 @@
-﻿"""FastAPI application factory."""
+"""FastAPI application factory."""
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -7,7 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import findings, fixes, github, health, scans
+from app.api.routes import auth, findings, fixes, github, health, scans
 from app.core.config import get_settings
 from app.core.middleware import (
     MULTIPART_OVERHEAD_BYTES,
@@ -55,6 +55,7 @@ def create_app() -> FastAPI:
     application.add_middleware(SecurityHeadersMiddleware)
 
     application.include_router(health.router, prefix="/api")
+    application.include_router(auth.router, prefix="/api")
     application.include_router(scans.router, prefix="/api")
     application.include_router(github.router, prefix="/api")
     application.include_router(findings.router, prefix="/api")

@@ -1,4 +1,4 @@
-﻿"""Application settings, loaded from environment variables (prefix SENTINEL_)."""
+"""Application settings, loaded from environment variables (prefix SENTINEL_)."""
 
 from functools import lru_cache
 from pathlib import Path
@@ -34,6 +34,11 @@ class Settings(BaseSettings):
     ai_base_url: str | None = None
     ai_api_key: SecretStr | None = None
     ai_timeout_seconds: float = 120.0
+
+    # Authentication & JWT
+    jwt_secret_key: SecretStr = SecretStr("sentinel-ai-insecure-dev-secret-key-change-in-production")
+    jwt_algorithm: str = "HS256"
+    jwt_access_token_expire_minutes: int = 60 * 24
 
     model_config = SettingsConfigDict(
         env_file=REPO_ROOT / ".env",

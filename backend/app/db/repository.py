@@ -1,14 +1,15 @@
-"""Database access for scans and findings."""
+"""Database access for scans, findings, and user accounts."""
 
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
-from app.db.models import FindingRecord, ScanRecord
+from app.db.models import FindingRecord, ScanRecord, UserRecord
 from app.schemas.finding import ScanResult
 
 
@@ -21,11 +22,40 @@ class FindingFilters:
     file_path: str | None = None
 
 
-def save_scan(session: Session, result: ScanResult) -> None:
+# --- User Repository Functions ----------------------------------------------
+
+def create_user(session: Session, email: str, hashed_password: str) -> UserRecord:
+    """Create and persist a new user."""
+    user = UserRecord(
+        id=str(uuid.uuid4()),
+        email=email.strip().lower(),
+        hashed_password=hashed_password,
+        created_at=datetime.now(timezone.utc),
+    )
+    session.add(user)
+    session.commit()
+    return user
+
+
+def get_user_by_email(session: Session, email: str) -> UserRecord | None:
+    """Find a user by case-normalized email address."""
+    stmt = select(UserRecord).where(UserRecord.email == email.strip().lower())
+    return session.scalar(stmt)
+
+
+def get_user_by_id(session: Session, user_id: str) -> UserRecord | None:
+    """Find a user by primary key ID."""
+    return session.get(UserRecord, user_id)
+
+
+# --- Scan Repository Functions ----------------------------------------------
+
+def save_scan(session: Session, result: ScanResult, user_id: str | None = None) -> None:
     """Store a completed scan and its findings in one transaction."""
     metadata = result.metadata
     record = ScanRecord(
         id=metadata.scan_id,
+        user_id=user_id,
         archive_name=metadata.archive_name,
         created_at=datetime.now(timezone.utc),
         source_files=metadata.source_files,
@@ -45,21 +75,34 @@ def save_scan(session: Session, result: ScanResult) -> None:
     session.commit()
 
 
-def list_scans(session: Session, limit: int, offset: int) -> tuple[int, list[ScanRecord]]:
-    total = session.scalar(select(func.count()).select_from(ScanRecord)) or 0
+def list_scans(
+    session: Session, limit: int, offset: int, user_id: str | None = None
+) -> tuple[int, list[ScanRecord]]:
+    stmt = select(ScanRecord)
+    if user_id is not None:
+        stmt = stmt.where(ScanRecord.user_id == user_id)
+
+    total = session.scalar(select(func.count()).select_from(stmt.subquery())) or 0
     rows = session.scalars(
-        select(ScanRecord).order_by(ScanRecord.created_at.desc()).limit(limit).offset(offset)
+        stmt.order_by(ScanRecord.created_at.desc()).limit(limit).offset(offset)
     ).all()
     return total, list(rows)
 
 
-def get_scan(session: Session, scan_id: str) -> ScanRecord | None:
-    return session.get(ScanRecord, scan_id)
-
-
-def delete_scan(session: Session, scan_id: str) -> bool:
+def get_scan(session: Session, scan_id: str, user_id: str | None = None) -> ScanRecord | None:
     record = session.get(ScanRecord, scan_id)
     if record is None:
+        return None
+    if user_id is not None and record.user_id is not None and record.user_id != user_id:
+        return None
+    return record
+
+
+def delete_scan(session: Session, scan_id: str, user_id: str | None = None) -> bool:
+    record = session.get(ScanRecord, scan_id)
+    if record is None:
+        return False
+    if user_id is not None and record.user_id is not None and record.user_id != user_id:
         return False
     session.delete(record)
     session.commit()

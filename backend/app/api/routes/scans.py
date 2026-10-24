@@ -1,4 +1,6 @@
-﻿"""Scan routes: create a scan from an upload, browse history, query findings, export reports."""
+"""Scan routes: create a scan from an upload, browse history, query findings, export reports."""
+
+from __future__ import annotations
 
 import logging
 from typing import Literal
@@ -7,6 +9,8 @@ from fastapi import APIRouter, Depends, File, HTTPException, Path, Query, Respon
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app.api.deps import get_optional_user
+from app.db.models import UserRecord
 from app.db.repository import (
     FindingFilters,
     delete_scan,
@@ -27,9 +31,12 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/scans", tags=["scans"])
 
+
 @router.post("/upload", response_model=ScanResult)
 def upload_repository(
-    file: UploadFile = File(...), session: Session = Depends(get_db)
+    file: UploadFile = File(...),
+    session: Session = Depends(get_db),
+    current_user: UserRecord | None = Depends(get_optional_user),
 ) -> ScanResult:
     """Accept a ZIP archive, validate and extract it safely, scan it, store and return results."""
     try:
@@ -44,7 +51,7 @@ def upload_repository(
         raise HTTPException(status_code=exc.status_code, detail=exc.message) from exc
 
     try:
-        save_scan(session, result)
+        save_scan(session, result, user_id=current_user.id if current_user else None)
     except SQLAlchemyError:
         session.rollback()
         logger.exception("Could not save scan %s", result.metadata.scan_id)
@@ -53,25 +60,33 @@ def upload_repository(
         )
     return result
 
+
 @router.get("", response_model=ScanListPage)
 def list_scan_history(
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     session: Session = Depends(get_db),
+    current_user: UserRecord | None = Depends(get_optional_user),
 ) -> ScanListPage:
-    total, records = list_scans(session, limit, offset)
+    user_id = current_user.id if current_user else None
+    total, records = list_scans(session, limit, offset, user_id=user_id)
     return ScanListPage(
         total=total, limit=limit, offset=offset, items=[to_summary(r) for r in records]
     )
 
+
 @router.get("/{scan_id}", response_model=ScanDetail)
 def get_scan_detail(
-    scan_id: str = Path(pattern=SCAN_ID_PATTERN), session: Session = Depends(get_db)
+    scan_id: str = Path(pattern=SCAN_ID_PATTERN),
+    session: Session = Depends(get_db),
+    current_user: UserRecord | None = Depends(get_optional_user),
 ) -> ScanDetail:
-    record = get_scan(session, scan_id)
+    user_id = current_user.id if current_user else None
+    record = get_scan(session, scan_id, user_id=user_id)
     if record is None:
         raise HTTPException(status_code=404, detail="Scan not found.")
     return to_detail(record, NOTICE)
+
 
 @router.get("/{scan_id}/findings", response_model=FindingsPage)
 def list_findings(
@@ -84,8 +99,10 @@ def list_findings(
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
     session: Session = Depends(get_db),
+    current_user: UserRecord | None = Depends(get_optional_user),
 ) -> FindingsPage:
-    if get_scan(session, scan_id) is None:
+    user_id = current_user.id if current_user else None
+    if get_scan(session, scan_id, user_id=user_id) is None:
         raise HTTPException(status_code=404, detail="Scan not found.")
     filters = FindingFilters(
         severities=list(severity),
@@ -99,14 +116,20 @@ def list_findings(
         total=total, limit=limit, offset=offset, items=[to_finding(r) for r in records]
     )
 
+
 @router.get("/{scan_id}/report")
 def download_report(
     scan_id: str = Path(pattern=SCAN_ID_PATTERN),
     report_format: Literal["json", "markdown"] = Query(default="json", alias="format"),
     include_ai: bool = Query(default=False),
     session: Session = Depends(get_db),
+    current_user: UserRecord | None = Depends(get_optional_user),
 ) -> Response:
     """Download a report. Scanner evidence comes first; AI content is opt-in and labeled."""
+    user_id = current_user.id if current_user else None
+    if get_scan(session, scan_id, user_id=user_id) is None:
+        raise HTTPException(status_code=404, detail="Scan not found.")
+
     report = build_report(session, scan_id, include_ai)
     if report is None:
         raise HTTPException(status_code=404, detail="Scan not found.")
@@ -127,10 +150,14 @@ def download_report(
         },
     )
 
+
 @router.delete("/{scan_id}", status_code=204)
 def remove_scan(
-    scan_id: str = Path(pattern=SCAN_ID_PATTERN), session: Session = Depends(get_db)
+    scan_id: str = Path(pattern=SCAN_ID_PATTERN),
+    session: Session = Depends(get_db),
+    current_user: UserRecord | None = Depends(get_optional_user),
 ) -> Response:
-    if not delete_scan(session, scan_id):
+    user_id = current_user.id if current_user else None
+    if not delete_scan(session, scan_id, user_id=user_id):
         raise HTTPException(status_code=404, detail="Scan not found.")
     return Response(status_code=204)

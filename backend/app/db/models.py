@@ -1,4 +1,4 @@
-"""SQLAlchemy models for persisted scans and findings."""
+"""SQLAlchemy models for persisted scans, findings, and user accounts."""
 
 from __future__ import annotations
 
@@ -12,10 +12,26 @@ class Base(DeclarativeBase):
     pass
 
 
+class UserRecord(Base):
+    __tablename__ = "users"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    hashed_password: Mapped[str] = mapped_column(String(255))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+    scans: Mapped[list[ScanRecord]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+
+
 class ScanRecord(Base):
     __tablename__ = "scans"
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    user_id: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id"), index=True, nullable=True
+    )
     archive_name: Mapped[str] = mapped_column(String(100))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     source_files: Mapped[int]
@@ -27,6 +43,7 @@ class ScanRecord(Base):
     severity_counts: Mapped[dict] = mapped_column(JSON)
     findings_total: Mapped[int]
 
+    user: Mapped[UserRecord | None] = relationship(back_populates="scans")
     findings: Mapped[list[FindingRecord]] = relationship(
         back_populates="scan", cascade="all, delete-orphan"
     )

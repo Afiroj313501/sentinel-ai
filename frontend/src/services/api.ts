@@ -1,4 +1,5 @@
-﻿import type { HealthResponse } from "../types/health";
+import { getToken } from "./token";
+import type { HealthResponse } from "../types/health";
 import type { ScanResult } from "../types/finding";
 import type { FindingsPage, FindingsQuery, ScanDetail, ScanListPage } from "../types/scan";
 
@@ -28,9 +29,18 @@ async function errorMessage(response: Response): Promise<string> {
 }
 
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = new Headers(init?.headers);
+  const token = getToken();
+  if (token && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
   let response: Response;
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, init);
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      headers,
+    });
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") throw error;
     throw new ApiError("Cannot reach the Sentinel backend. Is it running?", 0);
@@ -93,10 +103,17 @@ export async function fetchReportBlob(
   includeAi: boolean,
 ): Promise<Blob> {
   const params = new URLSearchParams({ format, include_ai: String(includeAi) });
+  const headers = new Headers();
+  const token = getToken();
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
   let response: Response;
   try {
     response = await fetch(
       `${API_BASE_URL}/api/scans/${encodeURIComponent(scanId)}/report?${params}`,
+      { headers },
     );
   } catch {
     throw new ApiError("Cannot reach the Sentinel backend. Is it running?", 0);
