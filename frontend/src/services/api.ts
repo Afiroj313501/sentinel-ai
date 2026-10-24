@@ -29,18 +29,19 @@ async function errorMessage(response: Response): Promise<string> {
 }
 
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const headers = new Headers(init?.headers);
   const token = getToken();
-  if (token && !headers.has("Authorization")) {
-    headers.set("Authorization", `Bearer ${token}`);
+  const requestInit: RequestInit = { ...init };
+  if (token) {
+    const headers = new Headers(init?.headers);
+    if (!headers.has("Authorization")) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+    requestInit.headers = headers;
   }
 
   let response: Response;
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
-      ...init,
-      headers,
-    });
+    response = await fetch(`${API_BASE_URL}${path}`, requestInit);
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") throw error;
     throw new ApiError("Cannot reach the Sentinel backend. Is it running?", 0);

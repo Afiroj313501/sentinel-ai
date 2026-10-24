@@ -4,7 +4,7 @@ from collections.abc import Iterator
 from functools import lru_cache
 from pathlib import Path
 
-from sqlalchemy import Engine, create_engine
+from sqlalchemy import Engine, create_engine, inspect, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import get_settings
@@ -29,7 +29,27 @@ def _session_factory() -> sessionmaker[Session]:
 
 def init_db() -> None:
     """Create tables if they do not exist yet."""
-    Base.metadata.create_all(get_engine())
+    engine = get_engine()
+    Base.metadata.create_all(engine)
+    _migrate_existing_schema(engine)
+
+
+def _migrate_existing_schema(engine: Engine) -> None:
+    """Apply additive changes to databases created by older application versions."""
+    if "user_id" not in {column["name"] for column in inspect(engine).get_columns("scans")}:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "ALTER TABLE scans ADD COLUMN user_id VARCHAR(36) "
+                    "REFERENCES users(id)"
+                )
+            )
+            connection.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_scans_user_id "
+                    "ON scans (user_id)"
+                )
+            )
 
 
 def get_db() -> Iterator[Session]:
