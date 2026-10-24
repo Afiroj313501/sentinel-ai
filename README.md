@@ -1,4 +1,4 @@
-﻿# Sentinel AI
+# Sentinel AI
 
 [![CI](https://github.com/Afiroj313501/sentinel-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/Afiroj313501/sentinel-ai/actions/workflows/ci.yml)
 
@@ -88,6 +88,25 @@ npm run dev
 ```
 
 Open the URL printed by Vite. For a first scan, use the ZIP at `sample-repos/vulnerable-python` after packaging that directory as a ZIP, or use the project's sample repository according to the frontend upload flow. The backend accepts ZIP files only; it does not execute uploaded source files.
+
+## Deployment with Docker Compose
+
+To deploy Sentinel AI in production using Docker:
+
+1. Copy the example environment file:
+   ```bash
+   cp .env.example .env
+   ```
+2. Build and start the services:
+   ```bash
+   docker compose up -d --build
+   ```
+3. Open `http://localhost` (or your server's domain/IP) in your browser.
+
+The deployment includes:
+- **Frontend & Reverse Proxy:** Multi-stage frontend build served by Nginx on port 80 with SPA fallback routing and proxy timeouts configured for long scans.
+- **Backend Service:** FastAPI with Python 3.12, Node.js/npm for dependency audits, Bandit, and pip-audit.
+- **Persistent Data:** A named volume (`sentinel-data`) persists the SQLite database at `/app/backend/data` across container upgrades.
 
 ## AI features
 
