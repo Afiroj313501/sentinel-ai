@@ -1,4 +1,4 @@
-﻿import { Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 export default function NotFound() {
   return (
@@ -6,7 +6,7 @@ export default function NotFound() {
       <p className="empty">
         Page not found.{" "}
         <Link to="/" className="text-btn">
-          Back to overview â†’
+          Back to overview →
         </Link>
       </p>
     </article>

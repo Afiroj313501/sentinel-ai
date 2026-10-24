@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import SeverityBadge from "../common/SeverityBadge";
 import ExplanationPanel from "./ExplanationPanel";
@@ -36,7 +36,7 @@ export default function FindingCard({ finding }: FindingCardProps) {
             {finding.file_path}:{lines}
           </span>
           <span className="finding-meta">
-            {finding.scanner} Â· {finding.rule_id}
+            {finding.scanner} · {finding.rule_id}
           </span>
         </span>
       </button>
@@ -48,7 +48,7 @@ export default function FindingCard({ finding }: FindingCardProps) {
             <p className="body-text">{finding.evidence}</p>
             <p className="fine-print">
               Confidence: {finding.confidence}
-              {finding.cwe ? ` Â· ${finding.cwe}` : ""}
+              {finding.cwe ? ` · ${finding.cwe}` : ""}
             </p>
           </div>
           {finding.snippet ? (

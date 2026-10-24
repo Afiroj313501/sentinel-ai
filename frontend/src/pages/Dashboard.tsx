@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Trash2 } from "lucide-react";
 import QueryState from "../components/common/QueryState";
@@ -64,7 +64,7 @@ export default function Dashboard() {
               <p className="empty">
                 No scans yet.{" "}
                 <Link to="/new" className="text-btn">
-                  Start your first scan â†’
+                  Start your first scan →
                 </Link>
               </p>
             </article>
@@ -91,7 +91,7 @@ export default function Dashboard() {
                               {scan.archive_name}
                             </Link>
                             <div className="finding-file">
-                              {formatDate(scan.created_at)} Â· {scan.source_files} files
+                              {formatDate(scan.created_at)} · {scan.source_files} files
                             </div>
                           </td>
                           <td>

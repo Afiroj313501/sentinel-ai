@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, Check, Copy, Download, RefreshCw, Wrench } from "lucide-react";
 import { fetchFix, suggestFix } from "../../services/fixes";
 import { formatDate } from "../../services/format";
@@ -89,7 +89,7 @@ function FixBody({ fix }: { fix: FixSuggestion }) {
 
       <div>
         <p className="label">
-          Proposed patch Â· <span className="mono" style={{ textTransform: "none" }}>{fix.file_path}</span>
+          Proposed patch · <span className="mono" style={{ textTransform: "none" }}>{fix.file_path}</span>
         </p>
         <DiffView diff={diff} />
       </div>
@@ -170,7 +170,7 @@ export default function FixPanel({ findingId }: { findingId: string }) {
         <h3 className="ai-title">
           <Wrench aria-hidden="true" />
           Suggested fix
-          <span className="ai-tag">AI-generated Â· untested</span>
+          <span className="ai-tag">AI-generated · untested</span>
         </h3>
         {shown && (
           <button

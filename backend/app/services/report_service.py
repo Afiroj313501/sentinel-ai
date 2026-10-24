@@ -1,4 +1,4 @@
-﻿"""Report building and rendering.
+"""Report building and rendering.
 
 Everything that came from the scanned repository or an AI model is untrusted. The Markdown
 renderer escapes it so it cannot inject HTML, links, headings, tables, or code fences.
@@ -98,12 +98,12 @@ def _finding_lines(number: int, finding: ReportFinding) -> list[str]:
         if finding.line_end > finding.line_start
         else str(finding.line_start)
     )
-    cwe = f" Â· {md_text(finding.cwe)}" if finding.cwe else ""
+    cwe = f" · {md_text(finding.cwe)}" if finding.cwe else ""
     out = [
         f"### {number}. [{finding.severity.upper()}] {md_text(finding.title)}",
         "",
         f"- **Location:** {md_code(f'{finding.file_path}:{span}')}",
-        f"- **Scanner:** {md_code(finding.scanner)} Â· rule {md_code(finding.rule_id)}",
+        f"- **Scanner:** {md_code(finding.scanner)} · rule {md_code(finding.rule_id)}",
         f"- **Confidence:** {finding.confidence}{cwe}",
         "",
         "**Scanner evidence**",
